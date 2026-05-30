@@ -204,8 +204,23 @@ h1 {
 .restart-btn { background-color: #9c27b0; }
 
 @media (max-width: 400px) {
+    .container {
+        padding: 15px 10px;
+    }
     .problems-grid {
-        grid-template-columns: 1fr; /* スマホの縦画面では1列に */
-        gap: 30px;
+        grid-template-columns: 1fr 1fr; /* スマホでも2列を維持 */
+        gap: 15px;
+    }
+    .math-problem {
+        font-size: 30px; /* はみ出さないように少し小さく */
+        width: 90px;
+    }
+    .prob-num {
+        font-size: 18px;
+        left: -25px;
+    }
+    .prob-result {
+        font-size: 30px;
+        left: -30px;
     }
 }
