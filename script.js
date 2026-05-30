@@ -4,9 +4,9 @@ let recognition = null;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.lang = 'ja-JP';
-    recognition.interimResults = false;
+    recognition.interimResults = true; // 中間結果を即時表示
     recognition.maxAlternatives = 1;
-    recognition.continuous = true; // 連続で聞き取る
+    recognition.continuous = false; // 音声認識が早く終了するようにfalse
 }
 
 // 状態管理
@@ -148,7 +148,9 @@ function updateMicButtonText() {
     if (isListening) {
         btnMic.classList.add('listening');
         btnMic.textContent = `👂 きいています... (${collectedAnswers.length}/${PROB_COUNT})`;
-        elMicStatus.textContent = "こたえを 順番に 言ってね (例: 10、20、30、40)";
+        if (elMicStatus.textContent !== "もう一度言ってね") {
+            elMicStatus.textContent = "こたえを 言ってね";
+        }
     } else {
         btnMic.classList.remove('listening');
         btnMic.textContent = collectedAnswers.length > 0 ? `🎤 つづきを言う (${collectedAnswers.length}/${PROB_COUNT})` : "🎤 4つのこたえを言う";
@@ -166,25 +168,49 @@ if (recognition) {
     };
 
     recognition.onresult = (event) => {
-        // 連続認識の最新の結果を取得
-        const transcript = event.results[event.results.length - 1][0].transcript;
-        console.log("認識結果:", transcript);
-        
-        const newNumbers = parseSpeechToNumbers(transcript);
-        
-        if (newNumbers.length > 0) {
-            collectedAnswers.push(...newNumbers);
-            
-            // 4個以上になったら切り詰める
-            if (collectedAnswers.length > PROB_COUNT) {
-                collectedAnswers = collectedAnswers.slice(0, PROB_COUNT);
+        let interimTranscript = '';
+        let finalTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+            } else {
+                interimTranscript += event.results[i][0].transcript;
             }
+        }
+
+        // 中間結果の即時表示
+        if (interimTranscript) {
+            elRecognizedText.textContent = `(ききとりちゅう...) ${interimTranscript}`;
+            elRecognizedText.style.color = "#999";
+        }
+
+        // 確定結果の処理
+        if (finalTranscript) {
+            console.log("確定認識結果:", finalTranscript);
+            const newNumbers = parseSpeechToNumbers(finalTranscript);
+            elRecognizedText.style.color = "#555";
             
-            elRecognizedText.textContent = `${collectedAnswers.join(', ')}`;
-            updateMicButtonText();
-            
-            if (collectedAnswers.length >= PROB_COUNT) {
-                recognition.stop();
+            if (newNumbers.length > 0) {
+                collectedAnswers.push(...newNumbers);
+                
+                // 4個以上になったら切り詰める
+                if (collectedAnswers.length > PROB_COUNT) {
+                    collectedAnswers = collectedAnswers.slice(0, PROB_COUNT);
+                }
+                
+                elRecognizedText.textContent = `${collectedAnswers.join(', ')}`;
+                updateMicButtonText();
+                
+                if (collectedAnswers.length >= PROB_COUNT) {
+                    checkAnswers();
+                } else {
+                    elMicStatus.textContent = "つぎのこたえを言ってね！";
+                }
+            } else {
+                // 認識できなかった（数字が含まれていなかった）
+                elRecognizedText.textContent = `❓ (${finalTranscript})`;
+                elMicStatus.textContent = "もう一度言ってね";
             }
         }
     };
@@ -202,12 +228,12 @@ if (recognition) {
         
         // 途中で途切れてしまったが、まだ4問揃っていない場合は自動で再開を試みる (使いやすさのため)
         if (collectedAnswers.length > 0 && collectedAnswers.length < PROB_COUNT) {
-            elMicStatus.textContent = "つづきのこたえを言ってね！";
+            if (elMicStatus.textContent !== "もう一度言ってね") {
+                elMicStatus.textContent = "つづきのこたえを言ってね！";
+            }
             try {
                 recognition.start();
             } catch(e){}
-        } else if (collectedAnswers.length >= PROB_COUNT) {
-            checkAnswers();
         }
     };
 }
@@ -240,8 +266,6 @@ function checkAnswers() {
             // ほんとうの答え
             box.textContent = correctAns;
             box.style.color = "#0000ff";
-            
-            // ユーザーの答えを下に見せるか、上書きするか。今回は上書きして青色にする
         }
     }
     
@@ -265,87 +289,136 @@ function checkAnswers() {
 // 読み上げ用の関数
 function speakMessage(text) {
     if ('speechSynthesis' in window) {
-        // すでに喋っている場合はキャンセル
         window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
         uttr.lang = 'ja-JP';
-        uttr.rate = 1.1;  // 少しだけ早め
-        uttr.pitch = 1.2; // 少し高めで明るく
+        uttr.rate = 1.1;
+        uttr.pitch = 1.2;
         window.speechSynthesis.speak(uttr);
     }
 }
 
-// 日本語の音声を数字の配列に変換する関数
+// 音声認識結果から日本語数字・漢数字・アラビア数字を整数に変換する関数
 function parseSpeechToNumbers(text) {
-    // 1. 全角数字を半角に
+    // 1. 全角を半角に
     let s = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-    // 2. 余計な言葉を削除
-    s = s.replace(/です|だよ|だ|と|や|の|つぎ|は/g, ' ');
-    // 3. 句読点や記号をスペースに
-    s = s.replace(/[、。・,，\s]+/g, ' ');
     
-    let parts = s.split(' ').filter(p => p.length > 0);
+    // 2. 答えの範囲が0〜200程度であることを利用して、数字以外の余計な文字を除去する
+    // 数字、漢字、特定のひらがな以外をスペースに置換
+    s = s.replace(/[^0-9〇一二三四五六七八九十百ぜろれいまるいちにさんしよんごろくななしちはちきゅうくじゅうひゃく]/g, ' ');
+
+    const digitMap = {
+        '〇':0, '一':1, '二':2, '三':3, '四':4, '五':5, '六':6, '七':7, '八':8, '九':9,
+        'ぜろ':0, 'れい':0, 'まる':0,
+        'いち':1, 'に':2, 'さん':3, 'し':4, 'よん':4, 'ご':5, 'ろく':6, 'なな':7, 'しち':7, 'はち':8, 'きゅう':9, 'く':9,
+        '十':10, 'じゅう':10, '百':100, 'ひゃく':100
+    };
+
+    let parts = s.split(/\s+/).filter(p => p.length > 0);
+    if (parts.length === 0) return [];
+
     let nums = [];
     
-    for(let part of parts) {
-        let n = parseSpeechToSingleNumber(part);
-        if(!isNaN(n)) {
-            nums.push(n);
+    for (let part of parts) {
+        if (/^\d+$/.test(part)) {
+            nums.push(parseInt(part, 10));
+            continue;
+        }
+        
+        let currentTotal = 0;
+        let currentNum = 0;
+        let hasNumber = false;
+
+        for (let i = 0; i < part.length; i++) {
+            let matchedValue = null;
+            let matchedLength = 0;
+            
+            const keys = Object.keys(digitMap).sort((a, b) => b.length - a.length);
+            for (let key of keys) {
+                if (part.substring(i, i + key.length) === key) {
+                    matchedValue = digitMap[key];
+                    matchedLength = key.length;
+                    break;
+                }
+            }
+
+            if (matchedValue !== null) {
+                hasNumber = true;
+                if (matchedValue === 10 || matchedValue === 100) {
+                    if (currentNum === 0) currentNum = 1;
+                    currentTotal += currentNum * matchedValue;
+                    currentNum = 0;
+                } else {
+                    if (currentNum !== 0) {
+                        currentNum = currentNum * 10 + matchedValue;
+                    } else {
+                        currentNum = matchedValue;
+                    }
+                }
+                i += matchedLength - 1;
+            } else if (/\d/.test(part[i])) {
+                hasNumber = true;
+                let numVal = parseInt(part[i], 10);
+                if (currentNum !== 0) {
+                    currentNum = currentNum * 10 + numVal;
+                } else {
+                    currentNum = numVal;
+                }
+            }
+        }
+        if (hasNumber) {
+            currentTotal += currentNum;
+            nums.push(currentTotal);
+        }
+    }
+    
+    // 「30 7」や「三 七」などを 37 と解釈できるように、隣り合う数字を可能な限り結合する
+    let combined = [];
+    let current = null;
+    
+    for (let num of nums) {
+        if (current === null) {
+            current = num;
         } else {
-            // パートの中に数字が連続している場合 (例: "7280" => 分割が難しいが、アラビア数字だけなら取り出す)
-            const digits = part.match(/\d+/g);
-            if (digits) {
-                nums.push(...digits.map(d => parseInt(d, 10)));
+            // currentとnumを結合できるかチェック (0〜200程度の範囲)
+            if (current < 10 && num < 10) {
+                // 例: 3 と 7 -> 37
+                let temp = current * 10 + num;
+                if (temp <= 200) {
+                    current = temp;
+                } else {
+                    combined.push(current);
+                    current = num;
+                }
+            } else if (current % 10 === 0 && num < 10) {
+                // 例: 30 と 7 -> 37
+                let temp = current + num;
+                if (temp <= 200) {
+                    current = temp;
+                } else {
+                    combined.push(current);
+                    current = num;
+                }
+            } else if (current === 100 && num < 100) {
+                // 例: 100 と 20 -> 120
+                let temp = current + num;
+                if (temp <= 200) {
+                    current = temp;
+                } else {
+                    combined.push(current);
+                    current = num;
+                }
+            } else {
+                combined.push(current);
+                current = num;
             }
         }
     }
-    return nums;
-}
-
-// 単一の文字列を数字にする(前のバージョンと同じ)
-function parseSpeechToSingleNumber(s) {
-    const match = s.match(/^\d+$/);
-    if (match) return parseInt(match[0], 10);
-
-    const digits = {
-        '〇':0, '一':1, '二':2, '三':3, '四':4, '五':5, '六':6, '七':7, '八':8, '九':9,
-        'ぜろ':0, 'れい':0, 'まる':0,
-        'いち':1, 'に':2, 'さん':3, 'し':4, 'よん':4, 'ご':5, 'ろく':6, 'なな':7, 'しち':7, 'はち':8, 'きゅう':9, 'く':9
-    };
+    if (current !== null) {
+        combined.push(current);
+    }
     
-    let total = 0;
-    let originalS = s;
-
-    if (s.includes('百') || s.includes('ひゃく')) {
-        total += 100;
-        s = s.replace(/百|ひゃく/, '');
-    }
-
-    let tenIndex = Math.max(s.indexOf('十'), s.indexOf('じゅう'));
-    if (tenIndex !== -1) {
-        let tenWord = s.includes('十') ? '十' : 'じゅう';
-        let p = s.split(tenWord);
-        let prefix = p[0];
-        
-        if (prefix === '') {
-            total += 10;
-        } else {
-            let n = digits[prefix] || parseInt(prefix);
-            if (!isNaN(n)) total += n * 10;
-        }
-        s = p[1]; 
-    }
-
-    if (s && s.length > 0) {
-        let n = digits[s] || parseInt(s);
-        if (!isNaN(n)) total += n;
-    }
-
-    if (total === 0 && !['〇','ぜろ','れい','まる','0'].includes(originalS)) {
-        return NaN;
-    }
-
-    return total;
+    return combined;
 }
 
 // 初期化実行
