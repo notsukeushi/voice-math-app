@@ -16,24 +16,65 @@
         </div>
 
         <div class="score-board">
-            もんだい: <span id="question-count">1</span>/10 <br>
+            セット: <span id="question-count">1</span>/5 <br>
             せいかい: <span id="correct-count">0</span>
         </div>
 
         <div class="problem-container">
-            <div class="math-problem">
-                <div class="number" id="num1">--</div>
-                <div class="operator-row">
-                    <span id="operator">+</span>
-                    <span class="number" id="num2">--</span>
+            <div class="problems-grid">
+                <!-- もんだい 1 -->
+                <div class="math-problem" id="prob-0">
+                    <div class="prob-num">①</div>
+                    <div class="number" id="num1-0">--</div>
+                    <div class="operator-row">
+                        <span id="operator-0">+</span>
+                        <span class="number" id="num2-0">--</span>
+                    </div>
+                    <hr class="line">
+                    <div class="number answer-box" id="answer-0">?</div>
+                    <div class="prob-result" id="result-0"></div>
                 </div>
-                <hr class="line">
-                <div class="number answer-box" id="answer">?</div>
+                <!-- もんだい 2 -->
+                <div class="math-problem" id="prob-1">
+                    <div class="prob-num">②</div>
+                    <div class="number" id="num1-1">--</div>
+                    <div class="operator-row">
+                        <span id="operator-1">+</span>
+                        <span class="number" id="num2-1">--</span>
+                    </div>
+                    <hr class="line">
+                    <div class="number answer-box" id="answer-1">?</div>
+                    <div class="prob-result" id="result-1"></div>
+                </div>
+                <!-- もんだい 3 -->
+                <div class="math-problem" id="prob-2">
+                    <div class="prob-num">③</div>
+                    <div class="number" id="num1-2">--</div>
+                    <div class="operator-row">
+                        <span id="operator-2">+</span>
+                        <span class="number" id="num2-2">--</span>
+                    </div>
+                    <hr class="line">
+                    <div class="number answer-box" id="answer-2">?</div>
+                    <div class="prob-result" id="result-2"></div>
+                </div>
+                <!-- もんだい 4 -->
+                <div class="math-problem" id="prob-3">
+                    <div class="prob-num">④</div>
+                    <div class="number" id="num1-3">--</div>
+                    <div class="operator-row">
+                        <span id="operator-3">+</span>
+                        <span class="number" id="num2-3">--</span>
+                    </div>
+                    <hr class="line">
+                    <div class="number answer-box" id="answer-3">?</div>
+                    <div class="prob-result" id="result-3"></div>
+                </div>
             </div>
         </div>
 
         <div class="controls">
-            <button id="mic-btn" class="mic-btn">🎤 こたえる (マイク)</button>
+            <button id="mic-btn" class="mic-btn">🎤 4つのこたえを言う</button>
             <p id="mic-status" class="mic-status"></p>
         </div>
 
@@ -42,7 +83,7 @@
             <div id="result-mark" class="result-mark"></div>
         </div>
         
-        <button id="next-btn" class="next-btn hidden">つぎのもんだいへ</button>
+        <button id="next-btn" class="next-btn hidden">つぎの4もんへ</button>
         <button id="restart-btn" class="restart-btn hidden">さいしょから</button>
     </div>
 

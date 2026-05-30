@@ -8,26 +8,27 @@ body {
     min-height: 100vh;
     margin: 0;
     text-align: center;
+    padding: 20px 0;
 }
 
 .container {
     background: white;
-    padding: 30px;
+    padding: 20px;
     border-radius: 20px;
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    width: 90%;
-    max-width: 400px;
+    width: 95%;
+    max-width: 600px;
 }
 
 h1 {
-    font-size: 22px;
+    font-size: 20px;
     color: #009688;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .settings {
-    margin-bottom: 20px;
-    font-size: 18px;
+    margin-bottom: 15px;
+    font-size: 16px;
     background: #f1f8e9;
     padding: 10px;
     border-radius: 10px;
@@ -39,34 +40,57 @@ h1 {
 }
 
 .score-board {
-    font-size: 18px;
+    font-size: 16px;
     background: #fff9c4;
     padding: 10px;
     border-radius: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     font-weight: bold;
     color: #ef6c00;
 }
 
 .problem-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 30px;
     background: #fafafa;
-    padding: 20px;
+    padding: 15px;
     border-radius: 15px;
     border: 2px dashed #ccc;
+    margin-bottom: 20px;
+}
+
+.problems-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
 }
 
 .math-problem {
-    font-size: 72px;
+    font-size: 40px; /* 少し小さくして4つ入るように */
     font-weight: bold;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    font-family: 'Courier New', monospace; /* monospace keeps numbers aligned */
-    width: 160px;
+    font-family: 'Courier New', monospace;
+    width: 120px;
+    margin: 0 auto;
     line-height: 1.1;
+    position: relative;
+}
+
+.prob-num {
+    position: absolute;
+    left: -40px;
+    top: 10px;
+    font-size: 24px;
+    font-family: 'Hiragino Maru Gothic ProN', sans-serif;
+    color: #555;
+}
+
+.prob-result {
+    position: absolute;
+    left: -40px;
+    bottom: 0px;
+    font-size: 40px;
+    font-family: 'Hiragino Maru Gothic ProN', sans-serif;
 }
 
 .operator-row {
@@ -78,7 +102,7 @@ h1 {
 .line {
     width: 100%;
     border: none;
-    border-top: 6px solid #333;
+    border-top: 4px solid #333;
     margin: 5px 0;
 }
 
@@ -91,15 +115,15 @@ h1 {
 }
 
 .controls {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .mic-btn {
     background-color: #ff9800;
     color: white;
     border: none;
-    padding: 15px 30px;
-    font-size: 20px;
+    padding: 15px;
+    font-size: 18px;
     font-weight: bold;
     border-radius: 50px;
     cursor: pointer;
@@ -120,7 +144,7 @@ h1 {
 
 @keyframes pulse {
     0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    50% { transform: scale(1.02); }
     100% { transform: scale(1); }
 }
 
@@ -133,41 +157,41 @@ h1 {
 
 .feedback-area {
     margin-top: 10px;
-    min-height: 120px;
+    min-height: 60px;
 }
 
 #recognized-text {
-    font-size: 18px;
+    font-size: 16px;
     color: #555;
     background: #eee;
     padding: 8px;
     border-radius: 8px;
     display: inline-block;
+    word-break: break-all;
 }
 
 .result-mark {
-    font-size: 80px;
+    font-size: 30px;
     font-weight: bold;
-    height: 90px;
+    min-height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-top: 10px;
 }
 
-.correct { color: #f44336; } /* ◯ is usually red in Japan */
-.incorrect { color: #2196f3; } /* ✘ is usually blue */
+.correct { color: #f44336; }
+.incorrect { color: #2196f3; }
 
 .hidden {
     display: none !important;
 }
 
-.next-btn {
-    background-color: #4caf50;
+.next-btn, .restart-btn {
     color: white;
     border: none;
-    padding: 15px 30px;
-    font-size: 20px;
+    padding: 15px;
+    font-size: 18px;
     font-weight: bold;
     border-radius: 10px;
     cursor: pointer;
@@ -176,16 +200,12 @@ h1 {
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
 
-.restart-btn {
-    background-color: #9c27b0;
-    color: white;
-    border: none;
-    padding: 15px 30px;
-    font-size: 20px;
-    font-weight: bold;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-top: 10px;
-    width: 100%;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+.next-btn { background-color: #4caf50; }
+.restart-btn { background-color: #9c27b0; }
+
+@media (max-width: 400px) {
+    .problems-grid {
+        grid-template-columns: 1fr; /* スマホの縦画面では1列に */
+        gap: 30px;
+    }
 }

@@ -6,22 +6,19 @@ if (SpeechRecognition) {
     recognition.lang = 'ja-JP';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognition.continuous = true; // 連続で聞き取る
 }
 
 // 状態管理
-let currentNum1 = 0;
-let currentNum2 = 0;
-let currentAnswer = 0;
-let questionCount = 1;
+let problems = []; // {num1, num2, operator, answer} * 4
+let currentSet = 1;
 let correctCount = 0;
-const MAX_QUESTIONS = 10;
-let isAnswered = false;
+const MAX_SETS = 5; // 4問 * 5セット = 20問
+const PROB_COUNT = 4;
+let collectedAnswers = [];
+let isListening = false;
 
 // DOM要素の取得
-const elNum1 = document.getElementById('num1');
-const elNum2 = document.getElementById('num2');
-const elOperator = document.getElementById('operator');
-const elAnswerBox = document.getElementById('answer');
 const elQuestionCount = document.getElementById('question-count');
 const elCorrectCount = document.getElementById('correct-count');
 const elRecognizedText = document.querySelector('#recognized-text span');
@@ -39,40 +36,50 @@ if (!recognition) {
     elMicStatus.textContent = "※このブラウザは音声認識に非対応です";
 }
 
-// もんだいの生成
-function generateProblem() {
+// もんだいの生成 (4問分)
+function generateProblems() {
     const mode = document.querySelector('input[name="mode"]:checked').value;
-    
-    // 2桁 (10〜99)
-    currentNum1 = Math.floor(Math.random() * 90) + 10;
-    currentNum2 = Math.floor(Math.random() * 90) + 10;
+    problems = [];
+    collectedAnswers = [];
 
-    if (mode === 'add') {
-        currentAnswer = currentNum1 + currentNum2;
-        elOperator.textContent = '+';
-    } else {
-        // 引き算の場合、答えがマイナスにならないように入れ替える
-        if (currentNum1 < currentNum2) {
-            let temp = currentNum1;
-            currentNum1 = currentNum2;
-            currentNum2 = temp;
+    for (let i = 0; i < PROB_COUNT; i++) {
+        let num1 = Math.floor(Math.random() * 90) + 10;
+        let num2 = Math.floor(Math.random() * 90) + 10;
+        let answer = 0;
+        let op = '+';
+
+        if (mode === 'add') {
+            answer = num1 + num2;
+        } else {
+            if (num1 < num2) {
+                let temp = num1; num1 = num2; num2 = temp;
+            }
+            answer = num1 - num2;
+            op = '-';
         }
-        currentAnswer = currentNum1 - currentNum2;
-        elOperator.textContent = '-';
+
+        problems.push({ num1, num2, operator: op, answer });
+
+        // 画面にセット
+        document.getElementById(`num1-${i}`).textContent = num1;
+        document.getElementById(`num2-${i}`).textContent = num2;
+        document.getElementById(`operator-${i}`).textContent = op;
+        document.getElementById(`answer-${i}`).textContent = '?';
+        document.getElementById(`answer-${i}`).classList.remove('filled');
+        document.getElementById(`answer-${i}`).style.color = "";
+        
+        let resEl = document.getElementById(`result-${i}`);
+        resEl.textContent = '';
+        resEl.className = 'prob-result';
     }
 
-    elNum1.textContent = currentNum1;
-    elNum2.textContent = currentNum2;
-    elAnswerBox.textContent = '?';
-    elAnswerBox.classList.remove('filled');
     elRecognizedText.textContent = '-';
     elResultMark.textContent = '';
-    elResultMark.className = 'result-mark';
     
-    isAnswered = false;
     btnMic.classList.remove('hidden');
     btnNext.classList.add('hidden');
     elMicStatus.textContent = "";
+    updateMicButtonText();
 }
 
 // 初期化とイベントリスナー
@@ -83,16 +90,16 @@ radiosMode.forEach(radio => {
 });
 
 btnNext.addEventListener('click', () => {
-    if (questionCount < MAX_QUESTIONS) {
-        questionCount++;
-        elQuestionCount.textContent = questionCount;
-        generateProblem();
+    if (currentSet < MAX_SETS) {
+        currentSet++;
+        elQuestionCount.textContent = currentSet;
+        generateProblems();
     } else {
         // 終了
         btnNext.classList.add('hidden');
         btnRestart.classList.remove('hidden');
-        elResultMark.textContent = `おわり！ ${MAX_QUESTIONS}もんちゅう ${correctCount}もん せいかい！`;
-        elResultMark.style.fontSize = "30px";
+        elResultMark.textContent = `おわり！ ${MAX_SETS * PROB_COUNT}もんちゅう ${correctCount}もん せいかい！`;
+        elResultMark.style.fontSize = "20px";
         elResultMark.style.color = "#ff9800";
     }
 });
@@ -100,106 +107,178 @@ btnNext.addEventListener('click', () => {
 btnRestart.addEventListener('click', resetGame);
 
 function resetGame() {
-    questionCount = 1;
+    currentSet = 1;
     correctCount = 0;
-    elQuestionCount.textContent = questionCount;
+    elQuestionCount.textContent = currentSet;
     elCorrectCount.textContent = correctCount;
     btnRestart.classList.add('hidden');
-    elResultMark.style.fontSize = "80px";
-    generateProblem();
+    elResultMark.style.fontSize = "30px";
+    generateProblems();
 }
 
 // マイクボタンの処理
 btnMic.addEventListener('click', () => {
-    if (isAnswered) return;
+    if (isListening) {
+        recognition.stop();
+        return;
+    }
     
-    try {
-        recognition.start();
-        btnMic.classList.add('listening');
-        btnMic.textContent = "👂 きいています...";
-        elMicStatus.textContent = "こたえを声にだして言ってね";
-    } catch (e) {
-        console.error(e);
-        elMicStatus.textContent = "マイクのエラーです";
+    // まだ4問答えていない場合は開始
+    if (collectedAnswers.length < PROB_COUNT) {
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error(e);
+            // すでに開始している場合のエラーなどは無視
+        }
     }
 });
 
+function updateMicButtonText() {
+    if (isListening) {
+        btnMic.classList.add('listening');
+        btnMic.textContent = `👂 きいています... (${collectedAnswers.length}/${PROB_COUNT})`;
+        elMicStatus.textContent = "こたえを 順番に 言ってね (例: 10、20、30、40)";
+    } else {
+        btnMic.classList.remove('listening');
+        btnMic.textContent = collectedAnswers.length > 0 ? `🎤 つづきを言う (${collectedAnswers.length}/${PROB_COUNT})` : "🎤 4つのこたえを言う";
+        if (collectedAnswers.length === 0) {
+            elMicStatus.textContent = "";
+        }
+    }
+}
+
 // 音声認識イベント
 if (recognition) {
+    recognition.onstart = () => {
+        isListening = true;
+        updateMicButtonText();
+    };
+
     recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
+        // 連続認識の最新の結果を取得
+        const transcript = event.results[event.results.length - 1][0].transcript;
         console.log("認識結果:", transcript);
         
-        const parsedNumber = parseSpeechToNumber(transcript);
+        const newNumbers = parseSpeechToNumbers(transcript);
         
-        // 画面に表示
-        elRecognizedText.textContent = `${transcript} → [${parsedNumber}]`;
-        
-        if (isNaN(parsedNumber)) {
-            elResultMark.textContent = "？";
-            elResultMark.className = "result-mark";
-            elMicStatus.textContent = "もういちど言ってね";
-            return;
+        if (newNumbers.length > 0) {
+            collectedAnswers.push(...newNumbers);
+            
+            // 4個以上になったら切り詰める
+            if (collectedAnswers.length > PROB_COUNT) {
+                collectedAnswers = collectedAnswers.slice(0, PROB_COUNT);
+            }
+            
+            elRecognizedText.textContent = `${collectedAnswers.join(', ')}`;
+            updateMicButtonText();
+            
+            if (collectedAnswers.length >= PROB_COUNT) {
+                recognition.stop();
+            }
         }
-        
-        checkAnswer(parsedNumber);
     };
 
     recognition.onerror = (event) => {
         console.error("Speech error", event.error);
-        btnMic.classList.remove('listening');
-        btnMic.textContent = "🎤 こたえる (マイク)";
-        elMicStatus.textContent = "マイクがうまく使えませんでした";
+        if (event.error !== 'no-speech') {
+            elMicStatus.textContent = "マイクがうまく使えませんでした";
+        }
     };
 
     recognition.onend = () => {
-        btnMic.classList.remove('listening');
-        btnMic.textContent = "🎤 こたえる (マイク)";
-        if (!isAnswered && elMicStatus.textContent === "こたえを声にだして言ってね") {
-             elMicStatus.textContent = "";
+        isListening = false;
+        updateMicButtonText();
+        
+        // 途中で途切れてしまったが、まだ4問揃っていない場合は自動で再開を試みる (使いやすさのため)
+        if (collectedAnswers.length > 0 && collectedAnswers.length < PROB_COUNT) {
+            elMicStatus.textContent = "つづきのこたえを言ってね！";
+            try {
+                recognition.start();
+            } catch(e){}
+        } else if (collectedAnswers.length >= PROB_COUNT) {
+            checkAnswers();
         }
     };
 }
 
 // 答え合わせ
-function checkAnswer(userAnswer) {
-    isAnswered = true;
+function checkAnswers() {
     btnMic.classList.add('hidden');
-    elAnswerBox.textContent = userAnswer;
-    elAnswerBox.classList.add('filled');
+    elMicStatus.textContent = "こたえあわせ！";
     
-    if (userAnswer === currentAnswer) {
-        elResultMark.textContent = "◯ せいかい！";
-        elResultMark.className = "result-mark correct";
-        correctCount++;
-        elCorrectCount.textContent = correctCount;
-    } else {
-        elResultMark.textContent = "✘ もういちど";
-        elResultMark.className = "result-mark incorrect";
-        // 本当の答えを見せる
-        elAnswerBox.textContent = currentAnswer;
-        elAnswerBox.style.color = "#0000ff";
+    let allCorrect = true;
+    
+    for (let i = 0; i < PROB_COUNT; i++) {
+        let userAnswer = collectedAnswers[i];
+        let correctAns = problems[i].answer;
+        
+        let box = document.getElementById(`answer-${i}`);
+        let resMark = document.getElementById(`result-${i}`);
+        
+        box.textContent = userAnswer;
+        box.classList.add('filled');
+        
+        if (userAnswer === correctAns) {
+            resMark.textContent = "◯";
+            resMark.classList.add('correct');
+            correctCount++;
+        } else {
+            resMark.textContent = "✘";
+            resMark.classList.add('incorrect');
+            allCorrect = false;
+            // ほんとうの答え
+            box.textContent = correctAns;
+            box.style.color = "#0000ff";
+            
+            // ユーザーの答えを下に見せるか、上書きするか。今回は上書きして青色にする
+        }
     }
     
-    elMicStatus.textContent = "";
+    elCorrectCount.textContent = correctCount;
+    
+    if (allCorrect) {
+        elResultMark.textContent = "パーフェクト！🎉";
+        elResultMark.className = "result-mark correct";
+    } else {
+        elResultMark.textContent = "ざんねん！";
+        elResultMark.className = "result-mark incorrect";
+    }
+    
     btnNext.classList.remove('hidden');
 }
 
-// 日本語の音声を数字に変換する関数
-function parseSpeechToNumber(text) {
-    // 余計な言葉を削除 (です、だよ など)
-    let s = text.replace(/です|だよ|だ/g, '');
+// 日本語の音声を数字の配列に変換する関数
+function parseSpeechToNumbers(text) {
+    // 1. 全角数字を半角に
+    let s = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    // 2. 余計な言葉を削除
+    s = s.replace(/です|だよ|だ|と|や|の|つぎ|は/g, ' ');
+    // 3. 句読点や記号をスペースに
+    s = s.replace(/[、。・,，\s]+/g, ' ');
     
-    // 全角数字を半角に
-    s = s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-    // 空白や句読点除去
-    s = s.replace(/[\s、。]/g, '');
+    let parts = s.split(' ').filter(p => p.length > 0);
+    let nums = [];
     
-    // アラビア数字が含まれていたらそれを抽出 (例: "72ですね" -> 72)
-    const match = s.match(/\d+/);
-    if (match && !s.includes('百') && !s.includes('十')) {
-        return parseInt(match[0], 10);
+    for(let part of parts) {
+        let n = parseSpeechToSingleNumber(part);
+        if(!isNaN(n)) {
+            nums.push(n);
+        } else {
+            // パートの中に数字が連続している場合 (例: "7280" => 分割が難しいが、アラビア数字だけなら取り出す)
+            const digits = part.match(/\d+/g);
+            if (digits) {
+                nums.push(...digits.map(d => parseInt(d, 10)));
+            }
+        }
     }
+    return nums;
+}
+
+// 単一の文字列を数字にする(前のバージョンと同じ)
+function parseSpeechToSingleNumber(s) {
+    const match = s.match(/^\d+$/);
+    if (match) return parseInt(match[0], 10);
 
     const digits = {
         '〇':0, '一':1, '二':2, '三':3, '四':4, '五':5, '六':6, '七':7, '八':8, '九':9,
@@ -210,18 +289,16 @@ function parseSpeechToNumber(text) {
     let total = 0;
     let originalS = s;
 
-    // 100の位
     if (s.includes('百') || s.includes('ひゃく')) {
         total += 100;
         s = s.replace(/百|ひゃく/, '');
     }
 
-    // 10の位
     let tenIndex = Math.max(s.indexOf('十'), s.indexOf('じゅう'));
     if (tenIndex !== -1) {
         let tenWord = s.includes('十') ? '十' : 'じゅう';
-        let parts = s.split(tenWord);
-        let prefix = parts[0];
+        let p = s.split(tenWord);
+        let prefix = p[0];
         
         if (prefix === '') {
             total += 10;
@@ -229,16 +306,14 @@ function parseSpeechToNumber(text) {
             let n = digits[prefix] || parseInt(prefix);
             if (!isNaN(n)) total += n * 10;
         }
-        s = parts[1]; // 十の後の部分
+        s = p[1]; 
     }
 
-    // 1の位
     if (s && s.length > 0) {
         let n = digits[s] || parseInt(s);
         if (!isNaN(n)) total += n;
     }
 
-    // パース失敗時（totalが0で、元の文字が0を意味しない場合）
     if (total === 0 && !['〇','ぜろ','れい','まる','0'].includes(originalS)) {
         return NaN;
     }
@@ -247,4 +322,4 @@ function parseSpeechToNumber(text) {
 }
 
 // 初期化実行
-generateProblem();
+generateProblems();
