@@ -17,6 +17,7 @@ const MAX_SETS = 5; // 4問 * 5セット = 20問
 const PROB_COUNT = 4;
 let collectedAnswers = [];
 let isListening = false;
+let startTime = 0;
 
 // DOM要素の取得
 const elQuestionCount = document.getElementById('question-count');
@@ -80,6 +81,9 @@ function generateProblems() {
     btnNext.classList.add('hidden');
     elMicStatus.textContent = "";
     updateMicButtonText();
+    
+    // 時間計測スタート
+    startTime = Date.now();
 }
 
 // 初期化とイベントリスナー
@@ -101,6 +105,12 @@ btnNext.addEventListener('click', () => {
         elResultMark.textContent = `おわり！ ${MAX_SETS * PROB_COUNT}もんちゅう ${correctCount}もん せいかい！`;
         elResultMark.style.fontSize = "20px";
         elResultMark.style.color = "#ff9800";
+        
+        if (correctCount === MAX_SETS * PROB_COUNT) {
+            speakMessage("ぜんぶのもんだいが おわったよ！さいごまで ぜんもんせいかい！すばらしい！");
+        } else {
+            speakMessage(`ぜんぶのもんだいが おわったよ！ ${correctCount}もん せいかいしました！`);
+        }
     }
 });
 
@@ -238,14 +248,31 @@ function checkAnswers() {
     elCorrectCount.textContent = correctCount;
     
     if (allCorrect) {
-        elResultMark.textContent = "パーフェクト！🎉";
+        const timeTaken = Math.round((Date.now() - startTime) / 1000);
+        elResultMark.textContent = `パーフェクト！🎉 ${timeTaken}びょうで できたよ！`;
         elResultMark.className = "result-mark correct";
+        
+        // 音声で祝福
+        speakMessage(`やったね！ぜんもんせいかい！${timeTaken}びょうでできたよ！すごい！`);
     } else {
         elResultMark.textContent = "ざんねん！";
         elResultMark.className = "result-mark incorrect";
     }
     
     btnNext.classList.remove('hidden');
+}
+
+// 読み上げ用の関数
+function speakMessage(text) {
+    if ('speechSynthesis' in window) {
+        // すでに喋っている場合はキャンセル
+        window.speechSynthesis.cancel();
+        const uttr = new SpeechSynthesisUtterance(text);
+        uttr.lang = 'ja-JP';
+        uttr.rate = 1.1;  // 少しだけ早め
+        uttr.pitch = 1.2; // 少し高めで明るく
+        window.speechSynthesis.speak(uttr);
+    }
 }
 
 // 日本語の音声を数字の配列に変換する関数
