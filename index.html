@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>こえでこたえる！さんすうアプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎙️ こえでこたえる！さんすう</h1>
+        
+        <div class="settings">
+            <label><input type="radio" name="mode" value="add" checked> たしざん</label>
+            <label><input type="radio" name="mode" value="sub"> ひきざん</label>
+        </div>
+
+        <div class="score-board">
+            もんだい: <span id="question-count">1</span>/10 <br>
+            せいかい: <span id="correct-count">0</span>
+        </div>
+
+        <div class="problem-container">
+            <div class="math-problem">
+                <div class="number" id="num1">--</div>
+                <div class="operator-row">
+                    <span id="operator">+</span>
+                    <span class="number" id="num2">--</span>
+                </div>
+                <hr class="line">
+                <div class="number answer-box" id="answer">?</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="mic-btn" class="mic-btn">🎤 こたえる (マイク)</button>
+            <p id="mic-status" class="mic-status"></p>
+        </div>
+
+        <div class="feedback-area">
+            <p id="recognized-text">ききとったこたえ: <span>-</span></p>
+            <div id="result-mark" class="result-mark"></div>
+        </div>
+        
+        <button id="next-btn" class="next-btn hidden">つぎのもんだいへ</button>
+        <button id="restart-btn" class="restart-btn hidden">さいしょから</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
