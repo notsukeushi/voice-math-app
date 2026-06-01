@@ -125,9 +125,9 @@ btnNext.addEventListener('click', () => {
         elResultMark.style.color = "#ff9800";
 
         if (correctCount === MAX_SETS * PROB_COUNT) {
-            speakMessage("ぜんぶのもんだいが おわったよ！さいごまで ぜんもんせいかい！すばらしい！");
+            speakMessage("ぜんぶの もんだいが おわったよ！ さいごまで ぜんもん せいかい！ すばらしい！", { pitch: 1.2, rate: 0.85 });
         } else {
-            speakMessage(`ぜんぶのもんだいが おわったよ！ ${correctCount}もん せいかいしました！`);
+            speakMessage(`ぜんぶの もんだいが おわったよ！ ${correctCount}もん せいかいしました！`);
         }
     }
 });
@@ -410,7 +410,7 @@ function checkAnswers() {
         const timeTaken = Math.round((Date.now() - startTime) / 1000);
         elResultMark.textContent = `パーフェクト！🎉 ${timeTaken}びょうで できたよ！`;
         elResultMark.className = "result-mark correct";
-        speakMessage(`やったね！ぜんもんせいかい！${timeTaken}びょうでできたよ！すごい！`);
+        speakMessage(`やったね、ぜんぶ せいかい！ ${timeTaken}びょうで できたね！ すごいね！`, { pitch: 1.2, rate: 0.85 });
     } else {
         elResultMark.textContent = "ざんねん！";
         elResultMark.className = "result-mark incorrect";
@@ -425,8 +425,12 @@ let preferredVoice = null;
 function initVoice() {
     const voices = window.speechSynthesis.getVoices();
     if (voices.length === 0) return;
-    // 知的な女性日本語ボイスを優先順に探す
+    // 自然な日本語ボイスを優先順に探す（Neural > 高品質 > 標準）
     const preferredNames = [
+        'Microsoft Nanami Online',   // Windows/Edge Neural（最自然）
+        'Microsoft Keita Online',    // Windows/Edge Neural 男性
+        'Microsoft Nanami',
+        'Microsoft Keita',
         'Google 日本語',
         'Microsoft Haruka',
         'Microsoft Ayumi',
@@ -446,13 +450,13 @@ if ('speechSynthesis' in window) {
     initVoice();
 }
 
-function speakMessage(text) {
+function speakMessage(text, opts = {}) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
         uttr.lang = 'ja-JP';
-        uttr.rate = 0.95;
-        uttr.pitch = 1.0;
+        uttr.rate  = opts.rate  ?? 0.88;
+        uttr.pitch = opts.pitch ?? 1.15;
         if (preferredVoice) uttr.voice = preferredVoice;
         window.speechSynthesis.speak(uttr);
     }
