@@ -148,6 +148,34 @@ h1 {
     100% { transform: scale(1); }
 }
 
+.undo-btn {
+    background-color: #ff7043;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    width: 100%;
+    margin-top: 8px;
+}
+
+.voice-check-btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    width: 100%;
+    margin-top: 8px;
+}
+
 .keyboard-btn {
     background-color: #2196f3;
     color: white;

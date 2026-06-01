@@ -32,6 +32,8 @@ const btnRestart = document.getElementById('restart-btn');
 const radiosMode = document.querySelectorAll('input[name="mode"]');
 const elMicStatus = document.getElementById('mic-status');
 const btnKeyboard = document.getElementById('keyboard-btn');
+const btnUndo = document.getElementById('undo-btn');
+const btnVoiceCheck = document.getElementById('voice-check-btn');
 const elKeyboardArea = document.getElementById('keyboard-area');
 const elKeyboardLabel = document.getElementById('keyboard-question-label');
 const elKeyboardDisplay = document.getElementById('keyboard-display');
@@ -89,6 +91,8 @@ function generateProblems() {
 
     btnMic.classList.remove('hidden');
     btnKeyboard.classList.remove('hidden');
+    btnUndo.classList.add('hidden');
+    btnVoiceCheck.classList.add('hidden');
     btnNext.classList.add('hidden');
     elKeyboardArea.classList.add('hidden');
     keyboardBuffer = '';
@@ -128,9 +132,44 @@ btnNext.addEventListener('click', () => {
 
 btnRestart.addEventListener('click', resetGame);
 
+btnVoiceCheck.addEventListener('click', () => {
+    if (!hasChecked) {
+        hasChecked = true;
+        checkAnswers();
+    }
+});
+
+btnUndo.addEventListener('click', () => {
+    if (collectedAnswers.length === 0) return;
+    const idx = collectedAnswers.length - 1;
+    collectedAnswers.pop();
+
+    const box = document.getElementById(`answer-${idx}`);
+    box.textContent = '?';
+    box.style.color = '';
+    box.classList.remove('filled');
+
+    btnVoiceCheck.classList.add('hidden');
+    elRecognizedText.textContent = collectedAnswers.length > 0 ? collectedAnswers.join(', ') : '-';
+    updateMicButtonText();
+
+    if (collectedAnswers.length === 0) {
+        btnUndo.classList.add('hidden');
+        elMicStatus.textContent = "";
+    } else {
+        elMicStatus.textContent = "つぎのこたえを言ってね！";
+    }
+
+    if (!isListening) {
+        try { recognition.start(); } catch(e) {}
+    }
+});
+
 btnKeyboard.addEventListener('click', () => {
     btnMic.classList.add('hidden');
     btnKeyboard.classList.add('hidden');
+    btnUndo.classList.add('hidden');
+    btnVoiceCheck.classList.add('hidden');
     elKeyboardArea.classList.remove('hidden');
     collectedAnswers = [];
     keyboardBuffer = '';
@@ -264,14 +303,24 @@ if (recognition) {
                     collectedAnswers = collectedAnswers.slice(0, PROB_COUNT);
                 }
 
+                // リアルタイムで答えボックスを更新
+                for (let i = 0; i < collectedAnswers.length; i++) {
+                    const box = document.getElementById(`answer-${i}`);
+                    box.textContent = collectedAnswers[i];
+                    box.style.color = '#e91e63';
+                }
+
                 elRecognizedText.textContent = `${collectedAnswers.join(', ')}`;
                 updateMicButtonText();
+                btnUndo.classList.remove('hidden');
 
-                // 二重呼び出しをガード
-                if (collectedAnswers.length >= PROB_COUNT && !hasChecked) {
-                    hasChecked = true;
-                    checkAnswers();
-                } else if (collectedAnswers.length < PROB_COUNT) {
+                if (collectedAnswers.length >= PROB_COUNT) {
+                    btnVoiceCheck.classList.remove('hidden');
+                    elMicStatus.textContent = "まちがえたら「1つ消す」を押してね！";
+                    if (isListening) {
+                        try { recognition.stop(); } catch(e) {}
+                    }
+                } else {
                     elMicStatus.textContent = "つぎのこたえを言ってね！";
                 }
             } else {
@@ -321,6 +370,8 @@ function checkAnswers() {
 
     btnMic.classList.add('hidden');
     btnKeyboard.classList.add('hidden');
+    btnUndo.classList.add('hidden');
+    btnVoiceCheck.classList.add('hidden');
     elMicStatus.textContent = "こたえあわせ！";
 
     let allCorrect = true;
