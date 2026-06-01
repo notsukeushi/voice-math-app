@@ -137,7 +137,9 @@ btnKeyboard.addEventListener('click', () => {
     keyboardAnswerIndex = 0;
     hasChecked = false;
     updateKeyboardDisplay();
-    elKeyboardArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => {
+        elKeyboardArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
 });
 
 function updateKeyboardDisplay() {
@@ -282,9 +284,17 @@ if (recognition) {
 
     recognition.onerror = (event) => {
         console.error("Speech error", event.error);
-        if (event.error !== 'no-speech') {
-            recognitionErrored = true;
-            elMicStatus.textContent = "マイクがうまく使えませんでした";
+        isListening = false;
+        recognitionErrored = true;
+        updateMicButtonText();
+        if (event.error === 'not-allowed') {
+            elMicStatus.textContent = "マイクの使用が許可されていません。「タップで入力する」をお使いください。";
+            btnKeyboard.classList.remove('hidden');
+        } else if (event.error === 'network') {
+            elMicStatus.textContent = "ネットワークエラーです。インターネット接続を確認してください。";
+        } else if (event.error !== 'no-speech') {
+            elMicStatus.textContent = "マイクがうまく使えませんでした。「タップで入力する」をお試しください。";
+            btnKeyboard.classList.remove('hidden');
         }
     };
 

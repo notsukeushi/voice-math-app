@@ -284,6 +284,33 @@ h1 {
 .next-btn { background-color: #4caf50; }
 .restart-btn { background-color: #9c27b0; }
 
+@media (max-width: 480px) {
+    .keyboard-area {
+        padding: 10px 8px;
+    }
+    .keyboard-display {
+        font-size: 36px;
+        min-height: 50px;
+        padding: 6px 12px;
+        margin-bottom: 10px;
+    }
+    .keyboard-question-label {
+        font-size: 16px;
+        margin-bottom: 6px;
+    }
+    .numpad {
+        gap: 7px;
+        max-width: 240px;
+    }
+    .num-key {
+        font-size: 24px;
+        padding: 12px 5px;
+    }
+    .ok-key {
+        font-size: 18px;
+    }
+}
+
 @media (max-width: 400px) {
     .container {
         padding: 15px 10px;
