@@ -22,6 +22,71 @@ let startTime = 0;
 let hasChecked = false;         // 二重呼び出しガード
 let recognitionErrored = false; // エラー状態フラグ
 
+const SVG_PERFECT = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="96" fill="#FFF9C4"/>
+  <rect x="20" y="26" width="14" height="9" rx="3" fill="#FF5252" transform="rotate(-35 27 30)"/>
+  <rect x="163" y="22" width="14" height="9" rx="3" fill="#448AFF" transform="rotate(25 170 26)"/>
+  <rect x="168" y="155" width="12" height="8" rx="3" fill="#66BB6A" transform="rotate(15 174 159)"/>
+  <rect x="14" y="150" width="12" height="8" rx="3" fill="#FF7043" transform="rotate(-20 20 154)"/>
+  <rect x="86" y="6" width="10" height="14" rx="3" fill="#AB47BC" transform="rotate(10 91 13)"/>
+  <rect x="138" y="170" width="12" height="8" rx="3" fill="#26C6DA" transform="rotate(-12 144 174)"/>
+  <polygon points="30,55 34.7,68.5 49,68.8 37.6,77.5 41.8,91.2 30,83 18.2,91.2 22.4,77.5 11,68.8 25.3,68.5" fill="#FFD740"/>
+  <polygon points="170,55 174.7,68.5 189,68.8 177.6,77.5 181.8,91.2 170,83 158.2,91.2 162.4,77.5 151,68.8 165.3,68.5" fill="#FFD740"/>
+  <circle cx="100" cy="115" r="72" fill="#FFCA28"/>
+  <path d="M50,75 L62,51 L79,68 L100,46 L121,68 L138,51 L150,75 Z" fill="#FFC107" stroke="#FF8F00" stroke-width="2"/>
+  <circle cx="100" cy="49" r="8" fill="#FF5252"/>
+  <circle cx="67" cy="60" r="6" fill="#4FC3F7"/>
+  <circle cx="133" cy="60" r="6" fill="#66BB6A"/>
+  <path d="M68,107 Q83,94 98,107" stroke="#5D4037" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M102,107 Q117,94 132,107" stroke="#5D4037" stroke-width="5.5" fill="none" stroke-linecap="round"/>
+  <path d="M64,132 Q100,170 136,132" fill="#E65100"/>
+  <line x1="64" y1="132" x2="136" y2="132" stroke="#5D4037" stroke-width="3.5"/>
+  <ellipse cx="60" cy="124" rx="16" ry="11" fill="#FF7043" opacity="0.4"/>
+  <ellipse cx="140" cy="124" rx="16" ry="11" fill="#FF7043" opacity="0.4"/>
+</svg>`;
+
+const SVG_ONE_MISS = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="96" fill="#FFF3E0"/>
+  <line x1="25" y1="42" x2="25" y2="62" stroke="#FFD740" stroke-width="4" stroke-linecap="round"/>
+  <line x1="15" y1="52" x2="35" y2="52" stroke="#FFD740" stroke-width="4" stroke-linecap="round"/>
+  <line x1="20" y1="47" x2="30" y2="57" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="30" y1="47" x2="20" y2="57" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="175" y1="42" x2="175" y2="62" stroke="#FFD740" stroke-width="4" stroke-linecap="round"/>
+  <line x1="165" y1="52" x2="185" y2="52" stroke="#FFD740" stroke-width="4" stroke-linecap="round"/>
+  <line x1="170" y1="47" x2="180" y2="57" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="180" y1="47" x2="170" y2="57" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="100" cy="113" r="70" fill="#FFB74D"/>
+  <path d="M68,97 Q82,92 92,97" stroke="#5D4037" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M108,97 Q118,92 132,97" stroke="#5D4037" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="82" cy="109" rx="9.5" ry="10" fill="#5D4037"/>
+  <ellipse cx="118" cy="109" rx="9.5" ry="10" fill="#5D4037"/>
+  <circle cx="85.5" cy="106" r="3.5" fill="white"/>
+  <circle cx="121.5" cy="106" r="3.5" fill="white"/>
+  <path d="M78,132 Q100,144 122,132" stroke="#5D4037" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="61" cy="124" rx="15" ry="10" fill="#FF7043" opacity="0.35"/>
+  <ellipse cx="139" cy="124" rx="15" ry="10" fill="#FF7043" opacity="0.35"/>
+  <path d="M148,68 C155,75 155,85 148,90 C141,85 141,75 148,68 Z" fill="#64B5F6" opacity="0.75"/>
+</svg>`;
+
+const SVG_TWO_PLUS = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="96" fill="#E3F2FD"/>
+  <line x1="162" y1="28" x2="162" y2="48" stroke="#FFD740" stroke-width="4" stroke-linecap="round"/>
+  <line x1="152" y1="38" x2="172" y2="38" stroke="#FFD740" stroke-width="4" stroke-linecap="round"/>
+  <line x1="155" y1="31" x2="169" y2="45" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="169" y1="31" x2="155" y2="45" stroke="#FFD740" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="100" cy="113" r="70" fill="#90CAF9"/>
+  <path d="M68,96 Q82,103 92,96" stroke="#1565C0" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M108,96 Q118,103 132,96" stroke="#1565C0" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="82" cy="110" rx="9" ry="10" fill="#1565C0"/>
+  <ellipse cx="118" cy="110" rx="9" ry="10" fill="#1565C0"/>
+  <circle cx="85" cy="107" r="3.5" fill="white"/>
+  <circle cx="121" cy="107" r="3.5" fill="white"/>
+  <path d="M80,121 C87,128 87,138 80,143 C73,138 73,128 80,121 Z" fill="#64B5F6" opacity="0.85"/>
+  <path d="M75,135 Q100,125 125,135" stroke="#1565C0" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="62" cy="122" rx="15" ry="10" fill="#5C6BC0" opacity="0.25"/>
+  <ellipse cx="138" cy="122" rx="15" ry="10" fill="#5C6BC0" opacity="0.25"/>
+</svg>`;
+
 // DOM要素の取得
 const elQuestionCount = document.getElementById('question-count');
 const elCorrectCount = document.getElementById('correct-count');
@@ -90,6 +155,7 @@ function generateProblems() {
 
     elRecognizedText.textContent = '-';
     elResultMark.textContent = '';
+    document.getElementById('result-illustration').classList.add('hidden');
 
     btnMic.classList.remove('hidden');
     btnKeyboard.classList.remove('hidden');
@@ -125,7 +191,7 @@ btnNext.addEventListener('click', () => {
         elResultMark.style.color = "#ff9800";
 
         if (correctCount === MAX_SETS * PROB_COUNT) {
-            speakMessage("ぜんぶの もんだいが おわったよ！ さいごまで ぜんもん せいかい！ すばらしい！", { pitch: 1.2, rate: 0.85 });
+            speakMessage("ぜんぶの もんだいが おわったよ！ さいごまで ぜんもん せいかい！ すばらしい！", { pitch: 1.65, rate: 1.2 });
         } else {
             speakMessage(`ぜんぶの もんだいが おわったよ！ ${correctCount}もん せいかいしました！`);
         }
@@ -377,6 +443,7 @@ function checkAnswers() {
     elMicStatus.textContent = "こたえあわせ！";
 
     let allCorrect = true;
+    let wrongCount = 0;
 
     for (let i = 0; i < PROB_COUNT; i++) {
         let userAnswer = collectedAnswers[i];
@@ -399,6 +466,7 @@ function checkAnswers() {
             resMark.textContent = "✘";
             resMark.classList.add('incorrect');
             allCorrect = false;
+            wrongCount++;
         }
     }
 
@@ -410,12 +478,13 @@ function checkAnswers() {
         const timeTaken = Math.round((Date.now() - startTime) / 1000);
         elResultMark.textContent = `パーフェクト！🎉 ${timeTaken}びょうで できたよ！`;
         elResultMark.className = "result-mark correct";
-        speakMessage(`やったね、ぜんぶ せいかい！ ${timeTaken}びょうで できたね！ すごいね！`, { pitch: 1.2, rate: 0.85 });
+        speakMessage(`やったね、ぜんぶ せいかい！ ${timeTaken}びょうで できたね！ すごいね！`, { pitch: 1.65, rate: 1.2 });
     } else {
         elResultMark.textContent = "ざんねん！";
         elResultMark.className = "result-mark incorrect";
     }
 
+    showIllustration(wrongCount);
     btnNext.classList.remove('hidden');
 }
 
@@ -455,11 +524,19 @@ function speakMessage(text, opts = {}) {
         window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
         uttr.lang = 'ja-JP';
-        uttr.rate  = opts.rate  ?? 0.88;
-        uttr.pitch = opts.pitch ?? 1.15;
+        uttr.rate  = opts.rate  ?? 1.1;
+        uttr.pitch = opts.pitch ?? 1.5;
         if (preferredVoice) uttr.voice = preferredVoice;
         window.speechSynthesis.speak(uttr);
     }
+}
+
+function showIllustration(wrongCount) {
+    const el = document.getElementById('result-illustration');
+    el.innerHTML = wrongCount === 0 ? SVG_PERFECT : wrongCount === 1 ? SVG_ONE_MISS : SVG_TWO_PLUS;
+    el.classList.remove('hidden', 'illust-pop');
+    void el.offsetWidth;
+    el.classList.add('illust-pop');
 }
 
 // 音声認識結果から日本語数字・漢数字・アラビア数字を整数に変換する関数

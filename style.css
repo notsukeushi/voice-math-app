@@ -292,6 +292,27 @@ h1 {
 .correct { color: #f44336; }
 .incorrect { color: #2196f3; }
 
+.result-illustration {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 8px 0 4px;
+}
+.result-illustration svg {
+    width: 150px;
+    height: 150px;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.18));
+}
+.illust-pop {
+    animation: illust-pop 0.55s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@keyframes illust-pop {
+    0%   { transform: scale(0.2); opacity: 0; }
+    60%  { transform: scale(1.18); opacity: 1; }
+    80%  { transform: scale(0.93); }
+    100% { transform: scale(1); }
+}
+
 .hidden {
     display: none !important;
 }
