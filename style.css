@@ -148,6 +148,87 @@ h1 {
     100% { transform: scale(1); }
 }
 
+.keyboard-btn {
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 50px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    width: 100%;
+    margin-top: 8px;
+}
+
+.keyboard-area {
+    background: #f5f5f5;
+    border-radius: 15px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.keyboard-question-label {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.keyboard-display {
+    font-size: 48px;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    color: #e91e63;
+    background: white;
+    border: 3px solid #ccc;
+    border-radius: 10px;
+    padding: 10px 20px;
+    min-width: 120px;
+    display: inline-block;
+    margin-bottom: 15px;
+    min-height: 70px;
+    line-height: 1;
+}
+
+.numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+.num-key {
+    background: white;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    font-size: 28px;
+    font-weight: bold;
+    padding: 15px 5px;
+    cursor: pointer;
+    color: #333;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.1s, background-color 0.1s;
+}
+
+.num-key:active {
+    transform: scale(0.95);
+    background-color: #e3f2fd;
+}
+
+.del-key {
+    background: #ffecb3;
+    color: #e65100;
+}
+
+.ok-key {
+    background: #c8e6c9;
+    color: #1b5e20;
+    font-size: 22px;
+}
+
 .mic-status {
     color: #666;
     font-size: 14px;

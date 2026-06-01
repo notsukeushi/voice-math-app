@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>こえでこたえる！さんすうアプリ</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
     <div class="container">
@@ -75,7 +75,27 @@
 
         <div class="controls">
             <button id="mic-btn" class="mic-btn">🎤 4つのこたえを言う</button>
+            <button id="keyboard-btn" class="keyboard-btn">🔢 タップで入力する</button>
             <p id="mic-status" class="mic-status"></p>
+        </div>
+
+        <div id="keyboard-area" class="keyboard-area hidden">
+            <div id="keyboard-question-label" class="keyboard-question-label">①のこたえは？</div>
+            <div id="keyboard-display" class="keyboard-display">--</div>
+            <div class="numpad">
+                <button class="num-key" data-val="7">7</button>
+                <button class="num-key" data-val="8">8</button>
+                <button class="num-key" data-val="9">9</button>
+                <button class="num-key" data-val="4">4</button>
+                <button class="num-key" data-val="5">5</button>
+                <button class="num-key" data-val="6">6</button>
+                <button class="num-key" data-val="1">1</button>
+                <button class="num-key" data-val="2">2</button>
+                <button class="num-key" data-val="3">3</button>
+                <button class="num-key del-key" data-val="del">⌫</button>
+                <button class="num-key" data-val="0">0</button>
+                <button class="num-key ok-key" data-val="ok">OK</button>
+            </div>
         </div>
 
         <div class="feedback-area">

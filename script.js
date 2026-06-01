@@ -31,12 +31,19 @@ const btnNext = document.getElementById('next-btn');
 const btnRestart = document.getElementById('restart-btn');
 const radiosMode = document.querySelectorAll('input[name="mode"]');
 const elMicStatus = document.getElementById('mic-status');
+const btnKeyboard = document.getElementById('keyboard-btn');
+const elKeyboardArea = document.getElementById('keyboard-area');
+const elKeyboardLabel = document.getElementById('keyboard-question-label');
+const elKeyboardDisplay = document.getElementById('keyboard-display');
+
+// キーボード入力の状態
+let keyboardBuffer = '';
+let keyboardAnswerIndex = 0;
 
 // 音声認識の初期化に失敗した場合
 if (!recognition) {
-    alert("お使いのブラウザは音声認識に対応していません。ChromeやEdgeを使用してください。");
-    btnMic.disabled = true;
-    elMicStatus.textContent = "※このブラウザは音声認識に非対応です";
+    btnMic.classList.add('hidden');
+    elMicStatus.textContent = "※このブラウザは音声認識に非対応です。タップで入力してください";
 }
 
 // もんだいの生成 (4問分)
@@ -81,7 +88,11 @@ function generateProblems() {
     elResultMark.textContent = '';
 
     btnMic.classList.remove('hidden');
+    btnKeyboard.classList.remove('hidden');
     btnNext.classList.add('hidden');
+    elKeyboardArea.classList.add('hidden');
+    keyboardBuffer = '';
+    keyboardAnswerIndex = 0;
     elMicStatus.textContent = "";
     updateMicButtonText();
 
@@ -116,6 +127,60 @@ btnNext.addEventListener('click', () => {
 });
 
 btnRestart.addEventListener('click', resetGame);
+
+btnKeyboard.addEventListener('click', () => {
+    btnMic.classList.add('hidden');
+    btnKeyboard.classList.add('hidden');
+    elKeyboardArea.classList.remove('hidden');
+    collectedAnswers = [];
+    keyboardBuffer = '';
+    keyboardAnswerIndex = 0;
+    hasChecked = false;
+    updateKeyboardDisplay();
+});
+
+function updateKeyboardDisplay() {
+    const labels = ['①', '②', '③', '④'];
+    elKeyboardLabel.textContent = labels[keyboardAnswerIndex] + 'のこたえは？';
+    elKeyboardDisplay.textContent = keyboardBuffer || '--';
+}
+
+document.querySelectorAll('.num-key').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const val = btn.dataset.val;
+        if (val === 'del') {
+            keyboardBuffer = keyboardBuffer.slice(0, -1);
+        } else if (val === 'ok') {
+            if (keyboardBuffer.length === 0) return;
+            const num = parseInt(keyboardBuffer, 10);
+            collectedAnswers.push(num);
+
+            // 答えた番号のボックスに入力値を表示
+            const box = document.getElementById(`answer-${keyboardAnswerIndex}`);
+            box.textContent = num;
+            box.classList.add('filled');
+
+            keyboardAnswerIndex++;
+            keyboardBuffer = '';
+
+            if (keyboardAnswerIndex >= PROB_COUNT) {
+                elKeyboardArea.classList.add('hidden');
+                if (!hasChecked) {
+                    hasChecked = true;
+                    checkAnswers();
+                }
+            } else {
+                updateKeyboardDisplay();
+            }
+            return;
+        } else {
+            if (keyboardBuffer.length < 3) {
+                keyboardBuffer += val;
+            }
+        }
+        updateKeyboardDisplay();
+    });
+});
 
 function resetGame() {
     currentSet = 1;
@@ -244,6 +309,7 @@ function checkAnswers() {
     }
 
     btnMic.classList.add('hidden');
+    btnKeyboard.classList.add('hidden');
     elMicStatus.textContent = "こたえあわせ！";
 
     let allCorrect = true;
