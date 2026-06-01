@@ -13,6 +13,7 @@ if (SpeechRecognition) {
 let problems = [];
 let currentSet = 1;
 let correctCount = 0;
+let totalSetsCompleted = 0;
 const MAX_SETS = 5;
 const PROB_COUNT = 4;
 let collectedAnswers = [];
@@ -24,6 +25,7 @@ let recognitionErrored = false; // エラー状態フラグ
 // DOM要素の取得
 const elQuestionCount = document.getElementById('question-count');
 const elCorrectCount = document.getElementById('correct-count');
+const elTotalSets = document.getElementById('total-sets');
 const elRecognizedText = document.querySelector('#recognized-text span');
 const elResultMark = document.getElementById('result-mark');
 const btnMic = document.getElementById('mic-btn');
@@ -401,6 +403,8 @@ function checkAnswers() {
     }
 
     elCorrectCount.textContent = correctCount;
+    totalSetsCompleted++;
+    elTotalSets.textContent = totalSetsCompleted;
 
     if (allCorrect) {
         const timeTaken = Math.round((Date.now() - startTime) / 1000);
@@ -416,13 +420,40 @@ function checkAnswers() {
 }
 
 // 読み上げ用の関数
+let preferredVoice = null;
+
+function initVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return;
+    // 知的な女性日本語ボイスを優先順に探す
+    const preferredNames = [
+        'Google 日本語',
+        'Microsoft Haruka',
+        'Microsoft Ayumi',
+        'Kyoko',
+        'O-Ren',
+        'Otoya',
+    ];
+    for (const name of preferredNames) {
+        const v = voices.find(v => v.name.includes(name));
+        if (v) { preferredVoice = v; return; }
+    }
+    preferredVoice = voices.find(v => v.lang.startsWith('ja')) || null;
+}
+
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.addEventListener('voiceschanged', initVoice);
+    initVoice();
+}
+
 function speakMessage(text) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         const uttr = new SpeechSynthesisUtterance(text);
         uttr.lang = 'ja-JP';
-        uttr.rate = 1.1;
-        uttr.pitch = 1.2;
+        uttr.rate = 0.95;
+        uttr.pitch = 1.0;
+        if (preferredVoice) uttr.voice = preferredVoice;
         window.speechSynthesis.speak(uttr);
     }
 }
