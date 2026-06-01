@@ -4,20 +4,22 @@ let recognition = null;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.lang = 'ja-JP';
-    recognition.interimResults = true; // 中間結果を即時表示
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
-    recognition.continuous = false; // 音声認識が早く終了するようにfalse
+    recognition.continuous = false;
 }
 
 // 状態管理
-let problems = []; // {num1, num2, operator, answer} * 4
+let problems = [];
 let currentSet = 1;
 let correctCount = 0;
-const MAX_SETS = 5; // 4問 * 5セット = 20問
+const MAX_SETS = 5;
 const PROB_COUNT = 4;
 let collectedAnswers = [];
 let isListening = false;
 let startTime = 0;
+let hasChecked = false;         // 二重呼び出しガード
+let recognitionErrored = false; // エラー状態フラグ
 
 // DOM要素の取得
 const elQuestionCount = document.getElementById('question-count');
@@ -42,6 +44,8 @@ function generateProblems() {
     const mode = document.querySelector('input[name="mode"]:checked').value;
     problems = [];
     collectedAnswers = [];
+    hasChecked = false;
+    recognitionErrored = false;
 
     for (let i = 0; i < PROB_COUNT; i++) {
         let num1 = Math.floor(Math.random() * 90) + 10;
@@ -61,14 +65,13 @@ function generateProblems() {
 
         problems.push({ num1, num2, operator: op, answer });
 
-        // 画面にセット
         document.getElementById(`num1-${i}`).textContent = num1;
         document.getElementById(`num2-${i}`).textContent = num2;
         document.getElementById(`operator-${i}`).textContent = op;
         document.getElementById(`answer-${i}`).textContent = '?';
         document.getElementById(`answer-${i}`).classList.remove('filled');
         document.getElementById(`answer-${i}`).style.color = "";
-        
+
         let resEl = document.getElementById(`result-${i}`);
         resEl.textContent = '';
         resEl.className = 'prob-result';
@@ -76,13 +79,12 @@ function generateProblems() {
 
     elRecognizedText.textContent = '-';
     elResultMark.textContent = '';
-    
+
     btnMic.classList.remove('hidden');
     btnNext.classList.add('hidden');
     elMicStatus.textContent = "";
     updateMicButtonText();
-    
-    // 時間計測スタート
+
     startTime = Date.now();
 }
 
@@ -99,13 +101,12 @@ btnNext.addEventListener('click', () => {
         elQuestionCount.textContent = currentSet;
         generateProblems();
     } else {
-        // 終了
         btnNext.classList.add('hidden');
         btnRestart.classList.remove('hidden');
         elResultMark.textContent = `おわり！ ${MAX_SETS * PROB_COUNT}もんちゅう ${correctCount}もん せいかい！`;
         elResultMark.style.fontSize = "20px";
         elResultMark.style.color = "#ff9800";
-        
+
         if (correctCount === MAX_SETS * PROB_COUNT) {
             speakMessage("ぜんぶのもんだいが おわったよ！さいごまで ぜんもんせいかい！すばらしい！");
         } else {
@@ -132,14 +133,12 @@ btnMic.addEventListener('click', () => {
         recognition.stop();
         return;
     }
-    
-    // まだ4問答えていない場合は開始
+
     if (collectedAnswers.length < PROB_COUNT) {
         try {
             recognition.start();
         } catch (e) {
             console.error(e);
-            // すでに開始している場合のエラーなどは無視
         }
     }
 });
@@ -148,7 +147,7 @@ function updateMicButtonText() {
     if (isListening) {
         btnMic.classList.add('listening');
         btnMic.textContent = `👂 きいています... (${collectedAnswers.length}/${PROB_COUNT})`;
-        if (elMicStatus.textContent !== "もう一度言ってね") {
+        if (!recognitionErrored) {
             elMicStatus.textContent = "こたえを 言ってね";
         }
     } else {
@@ -164,6 +163,7 @@ function updateMicButtonText() {
 if (recognition) {
     recognition.onstart = () => {
         isListening = true;
+        recognitionErrored = false;
         updateMicButtonText();
     };
 
@@ -179,38 +179,37 @@ if (recognition) {
             }
         }
 
-        // 中間結果の即時表示
         if (interimTranscript) {
             elRecognizedText.textContent = `(ききとりちゅう...) ${interimTranscript}`;
             elRecognizedText.style.color = "#999";
         }
 
-        // 確定結果の処理
         if (finalTranscript) {
             console.log("確定認識結果:", finalTranscript);
             const newNumbers = parseSpeechToNumbers(finalTranscript);
             elRecognizedText.style.color = "#555";
-            
+
             if (newNumbers.length > 0) {
                 collectedAnswers.push(...newNumbers);
-                
-                // 4個以上になったら切り詰める
+
                 if (collectedAnswers.length > PROB_COUNT) {
                     collectedAnswers = collectedAnswers.slice(0, PROB_COUNT);
                 }
-                
+
                 elRecognizedText.textContent = `${collectedAnswers.join(', ')}`;
                 updateMicButtonText();
-                
-                if (collectedAnswers.length >= PROB_COUNT) {
+
+                // 二重呼び出しをガード
+                if (collectedAnswers.length >= PROB_COUNT && !hasChecked) {
+                    hasChecked = true;
                     checkAnswers();
-                } else {
+                } else if (collectedAnswers.length < PROB_COUNT) {
                     elMicStatus.textContent = "つぎのこたえを言ってね！";
                 }
             } else {
-                // 認識できなかった（数字が含まれていなかった）
                 elRecognizedText.textContent = `❓ (${finalTranscript})`;
                 elMicStatus.textContent = "もう一度言ってね";
+                recognitionErrored = true;
             }
         }
     };
@@ -218,6 +217,7 @@ if (recognition) {
     recognition.onerror = (event) => {
         console.error("Speech error", event.error);
         if (event.error !== 'no-speech') {
+            recognitionErrored = true;
             elMicStatus.textContent = "マイクがうまく使えませんでした";
         }
     };
@@ -225,12 +225,10 @@ if (recognition) {
     recognition.onend = () => {
         isListening = false;
         updateMicButtonText();
-        
-        // 途中で途切れてしまったが、まだ4問揃っていない場合は自動で再開を試みる (使いやすさのため)
-        if (collectedAnswers.length > 0 && collectedAnswers.length < PROB_COUNT) {
-            if (elMicStatus.textContent !== "もう一度言ってね") {
-                elMicStatus.textContent = "つづきのこたえを言ってね！";
-            }
+
+        // エラー時や認識できなかった場合は自動再開しない
+        if (collectedAnswers.length > 0 && collectedAnswers.length < PROB_COUNT && !recognitionErrored) {
+            elMicStatus.textContent = "つづきのこたえを言ってね！";
             try {
                 recognition.start();
             } catch(e){}
@@ -240,49 +238,52 @@ if (recognition) {
 
 // 答え合わせ
 function checkAnswers() {
+    // 進行中の音声認識を停止
+    if (isListening) {
+        try { recognition.stop(); } catch(e) {}
+    }
+
     btnMic.classList.add('hidden');
     elMicStatus.textContent = "こたえあわせ！";
-    
+
     let allCorrect = true;
-    
+
     for (let i = 0; i < PROB_COUNT; i++) {
         let userAnswer = collectedAnswers[i];
         let correctAns = problems[i].answer;
-        
+
         let box = document.getElementById(`answer-${i}`);
         let resMark = document.getElementById(`result-${i}`);
-        
-        box.textContent = userAnswer;
+
         box.classList.add('filled');
-        
+
         if (userAnswer === correctAns) {
+            box.textContent = userAnswer;
             resMark.textContent = "◯";
             resMark.classList.add('correct');
             correctCount++;
         } else {
+            // 言った答え（取り消し線）と正解の両方を表示
+            box.innerHTML = `<span style="text-decoration:line-through;color:#aaa;font-size:0.65em">${userAnswer}</span><br>${correctAns}`;
+            box.style.color = "#0000ff";
             resMark.textContent = "✘";
             resMark.classList.add('incorrect');
             allCorrect = false;
-            // ほんとうの答え
-            box.textContent = correctAns;
-            box.style.color = "#0000ff";
         }
     }
-    
+
     elCorrectCount.textContent = correctCount;
-    
+
     if (allCorrect) {
         const timeTaken = Math.round((Date.now() - startTime) / 1000);
         elResultMark.textContent = `パーフェクト！🎉 ${timeTaken}びょうで できたよ！`;
         elResultMark.className = "result-mark correct";
-        
-        // 音声で祝福
         speakMessage(`やったね！ぜんもんせいかい！${timeTaken}びょうでできたよ！すごい！`);
     } else {
         elResultMark.textContent = "ざんねん！";
         elResultMark.className = "result-mark incorrect";
     }
-    
+
     btnNext.classList.remove('hidden');
 }
 
@@ -302,9 +303,8 @@ function speakMessage(text) {
 function parseSpeechToNumbers(text) {
     // 1. 全角を半角に
     let s = text.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
-    
-    // 2. 答えの範囲が0〜200程度であることを利用して、数字以外の余計な文字を除去する
-    // 数字、漢字、特定のひらがな以外をスペースに置換
+
+    // 2. 数字・漢数字・特定ひらがな以外をスペースに置換
     s = s.replace(/[^0-9〇一二三四五六七八九十百ぜろれいまるいちにさんしよんごろくななしちはちきゅうくじゅうひゃく]/g, ' ');
 
     const digitMap = {
@@ -318,13 +318,13 @@ function parseSpeechToNumbers(text) {
     if (parts.length === 0) return [];
 
     let nums = [];
-    
+
     for (let part of parts) {
         if (/^\d+$/.test(part)) {
             nums.push(parseInt(part, 10));
             continue;
         }
-        
+
         let currentTotal = 0;
         let currentNum = 0;
         let hasNumber = false;
@@ -332,7 +332,7 @@ function parseSpeechToNumbers(text) {
         for (let i = 0; i < part.length; i++) {
             let matchedValue = null;
             let matchedLength = 0;
-            
+
             const keys = Object.keys(digitMap).sort((a, b) => b.length - a.length);
             for (let key of keys) {
                 if (part.substring(i, i + key.length) === key) {
@@ -371,53 +371,32 @@ function parseSpeechToNumbers(text) {
             nums.push(currentTotal);
         }
     }
-    
-    // 「30 7」や「三 七」などを 37 と解釈できるように、隣り合う数字を可能な限り結合する
+
+    // 「百」と「二十」が別トークンで認識された場合のみ結合 (例: 100, 20 → 120)
+    // ※「30, 7」のような別々の答えを誤って37に結合しないよう、他の結合ルールは除去
     let combined = [];
     let current = null;
-    
+
     for (let num of nums) {
         if (current === null) {
             current = num;
-        } else {
-            // currentとnumを結合できるかチェック (0〜200程度の範囲)
-            if (current < 10 && num < 10) {
-                // 例: 3 と 7 -> 37
-                let temp = current * 10 + num;
-                if (temp <= 200) {
-                    current = temp;
-                } else {
-                    combined.push(current);
-                    current = num;
-                }
-            } else if (current % 10 === 0 && num < 10) {
-                // 例: 30 と 7 -> 37
-                let temp = current + num;
-                if (temp <= 200) {
-                    current = temp;
-                } else {
-                    combined.push(current);
-                    current = num;
-                }
-            } else if (current === 100 && num < 100) {
-                // 例: 100 と 20 -> 120
-                let temp = current + num;
-                if (temp <= 200) {
-                    current = temp;
-                } else {
-                    combined.push(current);
-                    current = num;
-                }
+        } else if (current === 100 && num < 100) {
+            let temp = current + num;
+            if (temp <= 200) {
+                current = temp;
             } else {
                 combined.push(current);
                 current = num;
             }
+        } else {
+            combined.push(current);
+            current = num;
         }
     }
     if (current !== null) {
         combined.push(current);
     }
-    
+
     return combined;
 }
 
