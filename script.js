@@ -137,6 +137,7 @@ btnKeyboard.addEventListener('click', () => {
     keyboardAnswerIndex = 0;
     hasChecked = false;
     updateKeyboardDisplay();
+    elKeyboardArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 function updateKeyboardDisplay() {

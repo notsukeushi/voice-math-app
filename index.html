@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>こえでこたえる！さんすうアプリ</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
     <div class="container">
@@ -73,12 +73,6 @@
             </div>
         </div>
 
-        <div class="controls">
-            <button id="mic-btn" class="mic-btn">🎤 4つのこたえを言う</button>
-            <button id="keyboard-btn" class="keyboard-btn">🔢 タップで入力する</button>
-            <p id="mic-status" class="mic-status"></p>
-        </div>
-
         <div id="keyboard-area" class="keyboard-area hidden">
             <div id="keyboard-question-label" class="keyboard-question-label">①のこたえは？</div>
             <div id="keyboard-display" class="keyboard-display">--</div>
@@ -96,6 +90,12 @@
                 <button class="num-key" data-val="0">0</button>
                 <button class="num-key ok-key" data-val="ok">OK</button>
             </div>
+        </div>
+
+        <div class="controls">
+            <button id="mic-btn" class="mic-btn">🎤 4つのこたえを言う</button>
+            <button id="keyboard-btn" class="keyboard-btn">🔢 タップで入力する</button>
+            <p id="mic-status" class="mic-status"></p>
         </div>
 
         <div class="feedback-area">
